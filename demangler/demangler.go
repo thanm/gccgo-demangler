@@ -10,6 +10,15 @@ import (
 	"regexp"
 )
 
+var verbctl int = 1
+
+func verb(vlevel int, s string, a ...interface{}) {
+	if verbctl >= vlevel {
+		fmt.Printf(s, a...)
+		fmt.Printf("\n")
+	}
+}
+
 // Regular expression for an embedded length
 var emlenre *regexp.Regexp = regexp.MustCompile(`([0-9])+[^0-9].*`)
 
@@ -28,7 +37,7 @@ func getemlen(id []byte) (length int, nchars int, err error) {
 		return 0, 0, errors.New("embedded length scanf failed")
 	}
 	nchars = len(lensl[1])
-	fmt.Printf("getemlen %s returns l=%d nc=%d\n", string(id), length, nchars)
+	verb(2, "getemlen %s returns l=%d nc=%d\n", string(id), length, nchars)
 	return
 }
 
@@ -39,7 +48,12 @@ func dem_array(id []byte) (res []byte, consumed int, err error) {
 	if eerr != nil {
 		return []byte{}, 0, eerr
 	}
-	fmt.Printf("dem_array: elemcon=%d\n", elemcon)
+
+	// slice?
+	if id[elemcon + 1] == 'e' {
+		// success
+		return []byte(fmt.Sprintf("[]%s", string(elemt))), elemcon + 2, nil
+	}
 
 	// length
 	arlen, lchars, lerr := getemlen(id[1+elemcon:])
@@ -59,23 +73,71 @@ func dem_array(id []byte) (res []byte, consumed int, err error) {
 	return
 }
 
-// N => named type (N dd_ name)
-func dem_named(id []byte) (res []byte, consumed int, err error) {
+// read <length> _ <name>
+func dem_name(id []byte) (res []byte, consumed int, err error) {
 	// length
-	length, lchars, lerr := getemlen(id[1:])
+	length, lchars, lerr := getemlen(id)
 	if lerr != nil {
 		return []byte{}, 0, lerr
 	}
 
 	// underscore
-	if id[lchars+1] != '_' {
+	if id[lchars] != '_' {
 		return []byte{}, 0, errors.New("named type missing underscore")
 	}
 
 	// success
-	return id[lchars+2:lchars+length+2], lchars+length+2, nil
+	return id[lchars+1:lchars+length+1], lchars+length+1, nil
 }
 
+// I => interface (I (method-name method-type) e)
+func dem_interface(id []byte) (res []byte, consumed int, err error) {
+	idx := 1
+	methodnames := make([][]byte, 0, 16)
+	methodtypes := make([][]byte, 0, 16)
+
+	for id[idx] != 'e' {
+
+		// method name
+		mname, mncons, mnerr := dem_name(id[idx:])
+		if mnerr != nil || mncons == 0 {
+			return []byte{}, 0, mnerr
+		}
+		methodnames = append(methodnames, mname)
+		idx += mncons
+
+		// method type
+		mtype, mtcons, mterr := dem(id[idx:])
+		if mterr != nil || mtcons == 0 {
+			return []byte{}, 0, mterr
+		}
+		methodtypes = append(methodtypes, mtype)
+		idx += mtcons
+	}
+
+	res = make([]byte, 0, idx)
+	res = append(res, []byte("interface{")...)
+	for i, mn := range methodnames {
+		if i != 0 {
+			res = append(res, []byte(", ")...)
+		}
+		res = append(res, mn...)
+		res = append(res, []byte(" ")...)
+		res = append(res, methodtypes[i]...)
+	}
+	res = append(res, []byte("}")...)
+	return res, idx+1, nil
+}
+
+// F => function (F [m receiver] [p params e] [r results e] e)
+func dem_function(id []byte) (res []byte, consumed int, err error) {
+	if id[1] == 'e' {
+		// this is all we support at the moment
+		return []byte("func()"), 2, nil
+	}
+
+	return []byte{}, 0, errors.New("func type demangling not fully implemented")
+}
 
 // A => array (A element [dd]e)
 // b => boolean
@@ -115,7 +177,17 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 		return dem_array(id)
 	case 'N':
 		// N => named type (N dd_ name)
-		return dem_named(id)
+		dres, dcons, derr := dem_name(id[1:])
+		if derr != nil {
+			return []byte{}, 0, derr
+		}
+		return dres, dcons+1, nil
+	case 'I':
+		// I => interface (I (method-name method-type) e)
+		return dem_interface(id)
+	case 'F':
+		// F => function (F [m receiver] [p params e] [r results e] e)
+		return dem_function(id)
 	default:
 		return []byte{}, 0, errors.New("unmatched")
 	}
@@ -136,7 +208,7 @@ func Demangle(token string) string {
 }
 
 // Regular expression for a go identifier
-var idsre *regexp.Regexp = regexp.MustCompile(`\pL[\pL\pN]*`)
+var idsre *regexp.Regexp = regexp.MustCompile(`[\pL_][\pL\pN_]*`)
 
 func DemangleLine(line string) string {
 	bytes := []byte(line)
@@ -149,6 +221,7 @@ func DemangleLine(line string) string {
 	for _, s := range idsre.FindAllSubmatchIndex(bytes, -1) {
 		res = append(res, bytes[sslot:s[0]]...)
 		identifier := bytes[s[0]:s[1]]
+		verb(1, "DemangleLine: dem(%s)", string(identifier))
 		dem, consumed, err := dem(identifier)
 		if err != nil || len(identifier) != consumed {
 			dem = identifier

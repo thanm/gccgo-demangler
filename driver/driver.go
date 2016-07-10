@@ -6,11 +6,12 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/thanm/gccgo-demangler/demangler"
 )
 
 var verbflag = flag.Int("v", 0, "Verbose trace output level")
@@ -24,11 +25,20 @@ func verb(vlevel int, s string, a ...interface{}) {
 	}
 }
 
+func usage(msg string) {
+ 	if len(msg) > 0 {
+ 		fmt.Fprintf(os.Stderr, "error: %s\n", msg)
+ 	}
+ 	fmt.Fprintf(os.Stderr, "usage: demangler [flags]\n")
+ 	flag.PrintDefaults()
+ 	os.Exit(2)
+}
+
 func filter(inf *os.File, outf *os.File) error {
 	// Copy in to out
 	scanner := bufio.NewScanner(inf)
 	for scanner.Scan() {
-		fmt.Fprintf(outf, "%s\n", DemangleLine(scanner.Text()))
+		fmt.Fprintf(outf, "%s\n", demangler.DemangleLine(scanner.Text()))
 	}
 	return nil
 }

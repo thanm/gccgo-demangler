@@ -3,6 +3,7 @@ package demangler
 
 type S2 struct {
 	b bool
+	bsl []bool
 	f32 float32
 	f64 float64
 	u32 uint32
@@ -19,6 +20,7 @@ func Dummy(p *S2) S2 {
 	var aa [8]int32
 	var x struct {
 		b bool
+		bsl []bool
 		f32 float32
 		f64 float64
 		u32 uint32
