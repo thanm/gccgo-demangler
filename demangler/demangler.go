@@ -10,7 +10,7 @@ import (
 	"regexp"
 )
 
-var verbctl int = 2
+var verbctl int = 0
 
 func verb(vlevel int, s string, a ...interface{}) {
 	if verbctl >= vlevel {
