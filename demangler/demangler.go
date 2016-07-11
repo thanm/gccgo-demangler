@@ -10,7 +10,7 @@ import (
 	"regexp"
 )
 
-var verbctl int = 1
+var verbctl int = 2
 
 func verb(vlevel int, s string, a ...interface{}) {
 	if verbctl >= vlevel {
@@ -26,6 +26,8 @@ var emlenre *regexp.Regexp = regexp.MustCompile(`([0-9])+[^0-9].*`)
 func getemlen(id []byte) (length int, nchars int, err error) {
 	// length
 	lensl := emlenre.FindSubmatch(id)
+	verb(2, "emlenre.FindSubmatch(%s) returns %v", string(id), lensl)
+
 	if len(lensl) != 2 {
 		return 0, 0, errors.New("embedded length match failed")
 	}
@@ -37,13 +39,14 @@ func getemlen(id []byte) (length int, nchars int, err error) {
 		return 0, 0, errors.New("embedded length scanf failed")
 	}
 	nchars = len(lensl[1])
-	verb(2, "getemlen %s returns l=%d nc=%d\n", string(id), length, nchars)
+	verb(2, "getemlen %s returns l=%d nc=%d", string(id), length, nchars)
 	return
 }
 
 // A => array (A element [dd]e)
 func dem_array(id []byte) (res []byte, consumed int, err error) {
 	// element type
+
 	elemt, elemcon, eerr := dem(id[1:])
 	if eerr != nil {
 		return []byte{}, 0, eerr
@@ -131,12 +134,107 @@ func dem_interface(id []byte) (res []byte, consumed int, err error) {
 
 // F => function (F [m receiver] [p params e] [r results e] e)
 func dem_function(id []byte) (res []byte, consumed int, err error) {
-	if id[1] == 'e' {
-		// this is all we support at the moment
-		return []byte("func()"), 2, nil
+	idx := 1
+
+	verb(1, "examining function %s", string(id))
+
+	var receiverType []byte
+	for id[idx] == 'm' {
+		verb(1, "starting receiver type")
+
+		// receiver
+		idx += 1
+		rtype, rtcons, rterr := dem(id[idx:])
+		if rterr != nil || rtcons == 0 {
+			verb(1, "receiver type error %v", rterr)
+			return []byte{}, 0, rterr
+		}
+		receiverType = rtype
+		idx += rtcons
 	}
 
-	return []byte{}, 0, errors.New("func type demangling not fully implemented")
+	var paramTypes [][]byte
+	varargs := ""
+	if id[idx] == 'p' {
+		verb(1, "starting params")
+
+		// parameters
+		idx += 1
+		for id[idx] != 'e' {
+			ptype, ptcons, pterr := dem(id[idx:])
+			if pterr != nil || ptcons == 0 {
+				return []byte{}, 0, pterr
+			}
+			paramTypes = append(paramTypes, ptype)
+			idx += ptcons
+
+			verb(1, "ptype %s", string(ptype))
+
+			for id[idx] == 'V' {
+				idx += 1
+				varargs = "..."
+			}
+		}
+		verb(1, "finished params")
+	}
+
+	var resultTypes [][]byte
+	if id[idx] == 'r' {
+		verb(1, "starting returns")
+
+		// results
+		idx += 1
+		for id[idx] != 'e' {
+			rtype, rtcons, rterr := dem(id[idx:])
+			if rterr != nil || rtcons == 0 {
+				return []byte{}, 0, rterr
+			}
+			resultTypes = append(resultTypes, rtype)
+			idx += rtcons
+		}
+		verb(1, "finished returns")
+	}
+
+	if id[idx] != 'e' {
+		return []byte{}, 0, errors.New("func type missing terminator")
+	}
+
+	res = make([]byte, 0, idx)
+	res = append(res, []byte("func{")...)
+	if len(receiverType) > 0 {
+		rtclause := []byte(fmt.Sprintf("R(%s) ", string(receiverType)))
+		res = append(res, rtclause...)
+	}
+	res = append(res, []byte("(")...)
+	for i, pt := range paramTypes {
+		if i != 0 {
+			res = append(res, []byte(", ")...)
+		}
+		res = append(res, pt...)
+	}
+	res = append(res, []byte(")")...)
+	if len(resultTypes) > 0 {
+		res = append(res, []byte(" ")...)
+		if len(resultTypes) > 1 {
+			res = append(res, []byte("(")...)
+		}
+		for i, rt := range resultTypes {
+			if i != 0 {
+				res = append(res, []byte(", ")...)
+			}
+			res = append(res, rt...)
+		}
+		if len(varargs) > 1 {
+			res = append(res, []byte(varargs)...)
+		}
+		if len(resultTypes) > 1 {
+			res = append(res, []byte(")")...)
+		}
+	}
+	res = append(res, []byte("}")...)
+
+	return res, idx+1, nil
+
 }
 
 // A => array (A element [dd]e)
@@ -166,6 +264,8 @@ var singletons = map[byte]string{
 }
 
 func dem(id []byte) (res []byte, consumed int, err error) {
+	verb(1, "dem(%s)", string(id))
+
 	if len(id) == 0 {
 		return []byte{}, 0, errors.New("premature EOS")
 	}
@@ -179,9 +279,18 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 		// N => named type (N dd_ name)
 		dres, dcons, derr := dem_name(id[1:])
 		if derr != nil {
+			verb(2, "name rule failed")
 			return []byte{}, 0, derr
 		}
 		return dres, dcons+1, nil
+	case 'p':
+		// p => pointer (p points-to)
+		pt, pcon, perr := dem(id[1:])
+		if perr != nil {
+			verb(1, "ptr rule failed")
+			return []byte{}, 0, perr
+		}
+		return []byte(fmt.Sprintf("*%s", string(pt))), pcon + 1, nil
 	case 'I':
 		// I => interface (I (method-name method-type) e)
 		return dem_interface(id)
@@ -189,7 +298,8 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 		// F => function (F [m receiver] [p params e] [r results e] e)
 		return dem_function(id)
 	default:
-		return []byte{}, 0, errors.New("unmatched")
+		msg := fmt.Sprintf("unmatched char %s", string(id[0]))
+		return []byte{}, 0, errors.New(msg)
 	}
 	return []byte{}, 0, errors.New("what happened?")
 }

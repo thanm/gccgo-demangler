@@ -64,12 +64,41 @@ func TestArray(t *testing.T) {
 	}
 }
 
+func TestPointer(t *testing.T) {
+	var raw = []string{
+		"pN5_int64",
+		"pIe",
+	}
+	var cooked = []string{
+		"*int64",
+		"*interface{}",
+	}
+	for pos, r := range raw {
+		c := Demangle(r)
+		if c != cooked[pos] {
+			d, consumed, err := dem([]byte(r))
+			if err != nil {
+				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
+					r, c, cooked[pos], err)
+			} else if len(c) != consumed {
+				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
+					r, c, cooked[pos], consumed, len(c))
+			} else {
+				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
+					r, string(d), cooked[pos])
+			}
+		}
+	}
+}
+
 func TestFunction(t *testing.T) {
 	var raw = []string{
 		"Fe",
+		"FmpN10_main.MangopN3_interN3_intee",
 	}
 	var cooked = []string{
-		"func()",
+		"func{()}",
+		"splot",
 	}
 	for pos, r := range raw {
 		c := Demangle(r)
