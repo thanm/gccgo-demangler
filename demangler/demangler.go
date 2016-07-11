@@ -20,7 +20,7 @@ func verb(vlevel int, s string, a ...interface{}) {
 }
 
 // Regular expression for an embedded length
-var emlenre *regexp.Regexp = regexp.MustCompile(`([0-9])+[^0-9].*`)
+var emlenre *regexp.Regexp = regexp.MustCompile(`([0-9]+)[^0-9].*`)
 
 // Get embedded length, return value and num chars it took up
 func getemlen(id []byte) (length int, nchars int, err error) {
@@ -31,6 +31,7 @@ func getemlen(id []byte) (length int, nchars int, err error) {
 	if len(lensl) != 2 {
 		return 0, 0, errors.New("embedded length match failed")
 	}
+	verb(2, "emlenre digstring is %s", string(lensl[1]))
 	nmatched, serr := fmt.Sscanf(string(lensl[1]), "%d", &length)
 	if serr != nil {
 		return 0, 0, serr
@@ -53,7 +54,7 @@ func dem_array(id []byte) (res []byte, consumed int, err error) {
 	}
 
 	// slice?
-	if id[elemcon + 1] == 'e' {
+	if id[elemcon+1] == 'e' {
 		// success
 		return []byte(fmt.Sprintf("[]%s", string(elemt))), elemcon + 2, nil
 	}
@@ -65,7 +66,7 @@ func dem_array(id []byte) (res []byte, consumed int, err error) {
 	}
 
 	// trailing "e"
-	if id[elemcon + lchars + 1] != 'e' {
+	if id[elemcon+lchars+1] != 'e' {
 		return []byte{}, 0, errors.New("trailing 'e' for array missing")
 	}
 
@@ -78,6 +79,8 @@ func dem_array(id []byte) (res []byte, consumed int, err error) {
 
 // read <length> _ <name>
 func dem_name(id []byte) (res []byte, consumed int, err error) {
+	verb(2, "dem_name(%s)", string(id))
+
 	// length
 	length, lchars, lerr := getemlen(id)
 	if lerr != nil {
@@ -90,7 +93,7 @@ func dem_name(id []byte) (res []byte, consumed int, err error) {
 	}
 
 	// success
-	return id[lchars+1:lchars+length+1], lchars+length+1, nil
+	return id[lchars+1 : lchars+length+1], lchars + length + 1, nil
 }
 
 // I => interface (I (method-name method-type) e)
@@ -129,7 +132,7 @@ func dem_interface(id []byte) (res []byte, consumed int, err error) {
 		res = append(res, methodtypes[i]...)
 	}
 	res = append(res, []byte("}")...)
-	return res, idx+1, nil
+	return res, idx + 1, nil
 }
 
 // F => function (F [m receiver] [p params e] [r results e] e)
@@ -176,6 +179,7 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 			}
 		}
 		verb(1, "finished params")
+		idx += 1
 	}
 
 	var resultTypes [][]byte
@@ -193,6 +197,7 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 			idx += rtcons
 		}
 		verb(1, "finished returns")
+		idx += 1
 	}
 
 	if id[idx] != 'e' {
@@ -233,7 +238,7 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 	}
 	res = append(res, []byte("}")...)
 
-	return res, idx+1, nil
+	return res, idx + 1, nil
 
 }
 
@@ -264,7 +269,7 @@ var singletons = map[byte]string{
 }
 
 func dem(id []byte) (res []byte, consumed int, err error) {
-	verb(1, "dem(%s)", string(id))
+	verb(1, "=-=-=-=-=\ndem(%s)", string(id))
 
 	if len(id) == 0 {
 		return []byte{}, 0, errors.New("premature EOS")
@@ -282,7 +287,7 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 			verb(2, "name rule failed")
 			return []byte{}, 0, derr
 		}
-		return dres, dcons+1, nil
+		return dres, dcons + 1, nil
 	case 'p':
 		// p => pointer (p points-to)
 		pt, pcon, perr := dem(id[1:])

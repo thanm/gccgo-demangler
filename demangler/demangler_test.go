@@ -1,4 +1,3 @@
-
 package demangler
 
 import (
@@ -38,11 +37,13 @@ func TestBasic(t *testing.T) {
 func TestArray(t *testing.T) {
 	var raw = []string{
 		"N5_int64",
+		"N10_main.Mango",
 		"AN5_int328e",
 		"AN5_int32e",
 	}
 	var cooked = []string{
 		"int64",
+		"main.Mango",
 		"[8]int32",
 		"[]int32",
 	}
@@ -94,11 +95,11 @@ func TestPointer(t *testing.T) {
 func TestFunction(t *testing.T) {
 	var raw = []string{
 		"Fe",
-		"FmpN10_main.MangopN3_interN3_intee",
+		"FppN5_int32pN5_int64erN4_boolIeee",
 	}
 	var cooked = []string{
 		"func{()}",
-		"splot",
+		"func{(*int32, *int64) (bool, interface{})}",
 	}
 	for pos, r := range raw {
 		c := Demangle(r)
