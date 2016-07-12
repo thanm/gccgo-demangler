@@ -135,6 +135,56 @@ func dem_interface(id []byte) (res []byte, consumed int, err error) {
 	return res, idx + 1, nil
 }
 
+// S => struct (S (field-name field-type [T dd_ tag]) e)
+func dem_struct(id []byte) (res []byte, consumed int, err error) {
+	idx := 1
+	fieldnames := make([][]byte, 0, 16)
+	fieldtypes := make([][]byte, 0, 16)
+	fieldtags := make([][]byte, 0, 16)
+
+	for id[idx] != 'e' {
+
+		// field name
+		fname, fncons, fnerr := dem_name(id[idx:])
+		if fnerr != nil || fncons == 0 {
+			return []byte{}, 0, fnerr
+		}
+		fieldnames = append(fieldnames, fname)
+		idx += fncons
+
+		// field type
+		ftype, ftcons, fterr := dem(id[idx:])
+		if fterr != nil || ftcons == 0 {
+			return []byte{}, 0, fterr
+		}
+		fieldtypes = append(fieldtypes, ftype)
+		idx += ftcons
+
+		if id[idx] == 'T' {
+			idx += 1
+			ftag, ftgcons, ftgerr := dem_name(id[idx:])
+			if ftgerr != nil || ftgcons == 0 {
+				return []byte{}, 0, ftgerr
+			}
+			fieldtags = append(fieldtags, ftag)
+			idx += fncons
+		}
+	}
+
+	res = make([]byte, 0, idx)
+	res = append(res, []byte("struct{")...)
+	for i, mn := range fieldnames {
+		if i != 0 {
+			res = append(res, []byte(", ")...)
+		}
+		res = append(res, mn...)
+		res = append(res, []byte(" ")...)
+		res = append(res, fieldtypes[i]...)
+	}
+	res = append(res, []byte("}")...)
+	return res, idx + 1, nil
+}
+
 // F => function (F [m receiver] [p params e] [r results e] e)
 func dem_function(id []byte) (res []byte, consumed int, err error) {
 	idx := 1
@@ -280,6 +330,9 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 	case 'A':
 		// A => array (A element [dd]e)
 		return dem_array(id)
+	case 'S':
+		// S => struct (S (field-name field-type [T dd_ tag]) e)
+		return dem_struct(id)
 	case 'N':
 		// N => named type (N dd_ name)
 		dres, dcons, derr := dem_name(id[1:])
@@ -288,6 +341,7 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 			return []byte{}, 0, derr
 		}
 		return dres, dcons + 1, nil
+
 	case 'p':
 		// p => pointer (p points-to)
 		pt, pcon, perr := dem(id[1:])
