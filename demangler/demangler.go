@@ -22,8 +22,8 @@ func verb(vlevel int, s string, a ...interface{}) {
 // Regular expression for an embedded length
 var emlenre *regexp.Regexp = regexp.MustCompile(`([0-9]+)[^0-9].*`)
 
-// Get embedded length, return value and num chars it took up
-func getemlen(id []byte) (length int, nchars int, err error) {
+// Get embedded length, return value and number of bytes it occupied
+func getemlen(id []byte) (length int, nbytes int, err error) {
 	// length
 	lensl := emlenre.FindSubmatch(id)
 	verb(2, "emlenre.FindSubmatch(%s) returns %v", string(id), lensl)
@@ -39,8 +39,8 @@ func getemlen(id []byte) (length int, nchars int, err error) {
 	if nmatched != 1 {
 		return 0, 0, errors.New("embedded length scanf failed")
 	}
-	nchars = len(lensl[1])
-	verb(2, "getemlen %s returns l=%d nc=%d", string(id), length, nchars)
+	nbytes = len(lensl[1])
+	verb(2, "getemlen %s returns l=%d nc=%d", string(id), length, nbytes)
 	return
 }
 
@@ -289,7 +289,41 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 	res = append(res, []byte("}")...)
 
 	return res, idx + 1, nil
+}
 
+// C => channel (C element [s][r]e)
+func dem_chan(id []byte) (res []byte, consumed int, err error) {
+	idx := 1
+
+	// element type
+	et, econ, eerr := dem(id[idx:])
+	if eerr != nil {
+		verb(1, "chan rule failed")
+		return []byte{}, 0, eerr
+	}
+	idx += econ
+	cansend := ""
+	canrecv := ""
+	if id[idx] == 's' {
+		cansend = "<-"
+		idx += 1
+	}
+	if id[idx] == 'r' {
+		canrecv = "<-"
+		idx += 1
+	}
+	if id[idx] != 'e' {
+		return []byte{}, 0, errors.New("chan type missing end")
+	}
+	idx += 1
+	if cansend == "" && canrecv == "" {
+		cansend = "?"
+		canrecv = "?"
+	} else if cansend != "" && canrecv != "" {
+		cansend = ""
+		canrecv = ""
+	}
+	return []byte(fmt.Sprintf("%schan%s{%s}", canrecv, cansend, string(et))), idx, nil
 }
 
 // A => array (A element [dd]e)
@@ -350,6 +384,9 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 			return []byte{}, 0, perr
 		}
 		return []byte(fmt.Sprintf("*%s", string(pt))), pcon + 1, nil
+	case 'C':
+		// C => channel (C element [s][r]e)
+		return dem_chan(id)
 	case 'I':
 		// I => interface (I (method-name method-type) e)
 		return dem_interface(id)

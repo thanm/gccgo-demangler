@@ -1,8 +1,30 @@
 package demangler
 
 import (
+	"fmt"
 	"testing"
 )
+
+func testDem(raw string, expected string) string {
+	cooked := Demangle(raw)
+	if cooked == expected {
+		return ""
+	}
+	save := Verbctl
+	Verbctl = 2
+	d, consumed, err := dem([]byte(raw))
+	Verbctl = save
+	if err != nil {
+		return fmt.Sprintf("raw=%s decoded='%s' wanted '%s' err=%v",
+			raw, cooked, expected, err)
+	} else if len(cooked) != consumed {
+		return fmt.Sprintf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
+			raw, cooked, expected, consumed, len(cooked))
+	} else {
+		return fmt.Sprintf("raw=%s decoded='%s' wanted '%s' no error?",
+			raw, string(d), expected)
+	}
+}
 
 func TestBasic(t *testing.T) {
 	var raw = []string{
@@ -26,10 +48,9 @@ func TestBasic(t *testing.T) {
 		"nil",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			t.Errorf("raw=%s decoded='%s' wanted '%s'",
-				r, c, cooked[pos])
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
@@ -48,19 +69,9 @@ func TestArray(t *testing.T) {
 		"[]int32",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			d, consumed, err := dem([]byte(r))
-			if err != nil {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
-					r, c, cooked[pos], err)
-			} else if len(c) != consumed {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
-					r, c, cooked[pos], consumed, len(c))
-			} else {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
-					r, string(d), cooked[pos])
-			}
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
@@ -75,19 +86,9 @@ func TestPointer(t *testing.T) {
 		"*interface{}",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			d, consumed, err := dem([]byte(r))
-			if err != nil {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
-					r, c, cooked[pos], err)
-			} else if len(c) != consumed {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
-					r, c, cooked[pos], consumed, len(c))
-			} else {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
-					r, string(d), cooked[pos])
-			}
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
@@ -102,19 +103,9 @@ func TestFunction(t *testing.T) {
 		"func{(*int32, *int64) (bool, interface{})}",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			d, consumed, err := dem([]byte(r))
-			if err != nil {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
-					r, c, cooked[pos], err)
-			} else if len(c) != consumed {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
-					r, c, cooked[pos], consumed, len(c))
-			} else {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
-					r, string(d), cooked[pos])
-			}
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
@@ -129,19 +120,9 @@ func TestInterface(t *testing.T) {
 		"interface{foo func{()}}",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			d, consumed, err := dem([]byte(r))
-			if err != nil {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
-					r, c, cooked[pos], err)
-			} else if len(c) != consumed {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
-					r, c, cooked[pos], consumed, len(c))
-			} else {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
-					r, string(d), cooked[pos])
-			}
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
@@ -156,22 +137,30 @@ func TestStruct(t *testing.T) {
 		"struct{b bool, bsl []bool, f32 float32, f64 float64, u32 uint32, u64 uint64, i32 int32, i64 int64, pi32 *int32, fptr func{()}, c128 complex128, ba [32]uint8}",
 	}
 	for pos, r := range raw {
-		c := Demangle(r)
-		if c != cooked[pos] {
-			save := Verbctl
-			Verbctl = 2
-			d, consumed, err := dem([]byte(r))
-			if err != nil {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' err=%v",
-					r, c, cooked[pos], err)
-			} else if len(c) != consumed {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' consumed=%d len=%d",
-					r, c, cooked[pos], consumed, len(c))
-			} else {
-				t.Errorf("raw=%s decoded='%s' wanted '%s' no error?",
-					r, string(d), cooked[pos])
-			}
-			Verbctl = save
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
+		}
+	}
+}
+
+func TestChan(t *testing.T) {
+	var raw = []string{
+		"Czsre",
+		"Czse",
+		"Czre",
+		"Cze",
+	}
+	var cooked = []string{
+		"chan{string}",
+		"chan<-{string}",
+		"<-chan{string}",
+		"?chan?{string}",
+	}
+	for pos, r := range raw {
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
 		}
 	}
 }
