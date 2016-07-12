@@ -26,12 +26,12 @@ func verb(vlevel int, s string, a ...interface{}) {
 }
 
 func usage(msg string) {
- 	if len(msg) > 0 {
- 		fmt.Fprintf(os.Stderr, "error: %s\n", msg)
- 	}
- 	fmt.Fprintf(os.Stderr, "usage: demangler [flags]\n")
- 	flag.PrintDefaults()
- 	os.Exit(2)
+	if len(msg) > 0 {
+		fmt.Fprintf(os.Stderr, "error: %s\n", msg)
+	}
+	fmt.Fprintf(os.Stderr, "usage: demangler [flags]\n")
+	flag.PrintDefaults()
+	os.Exit(2)
 }
 
 func filter(inf *os.File, outf *os.File) error {
@@ -47,7 +47,6 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("demangler: ")
 	flag.Parse()
-	fmt.Printf("setting demangler.Verbctl to %d\n", *verbflag)
 	demangler.Verbctl = *verbflag
 	verb(1, "in main")
 	if flag.NArg() != 0 {
@@ -59,7 +58,7 @@ func main() {
 		verb(1, "opening %s", *infileflag)
 		infile, err = os.Open(*infileflag)
 		if err != nil {
-			log.Fatal("%v", err)
+			log.Fatal(err)
 		}
 	}
 	var outfile *os.File = os.Stdout
@@ -67,12 +66,12 @@ func main() {
 		verb(1, "opening %s", *outfileflag)
 		outfile, err = os.OpenFile(*outfileflag, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
-			log.Fatal("%v", err)
+			log.Fatal(err)
 		}
 	}
 	err = filter(infile, outfile)
 	if err != nil {
-		log.Fatal("%v", err)
+		log.Fatal(err)
 	}
 	verb(1, "leaving main")
 }

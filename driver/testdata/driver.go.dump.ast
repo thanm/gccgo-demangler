@@ -1,0 +1,322 @@
+.main.verb(.main.vlevel (N3_int),.main.s (N6_string),.main.a (AIee)) : (FpN3_intN6_stringAIeeVee)
+{
+  {
+    if (*(.main.verbflag)  >= .main.vlevel) 
+    {
+      tmp.67286736 (N3_int)
+      tmp.67546848 (N5_error)
+      tmp.67584336 (S4_res0N3_int4_res1N5_errore)
+      Printf(.main.s,.main.a) 
+      tmp.67546912 (N3_int)
+      tmp.67547056 (N5_error)
+      tmp.67675024 = nil
+      tmp.67675312 (S4_res0N3_int4_res1N5_errore)
+      Printf("\n",slicevalue(values: nil, length: 0, capacity: 0)) 
+    }
+  }
+}
+.main.usage(.main.msg (N6_string)) : (FpN6_stringee)
+{
+  {
+    if (len(.main.msg)  > 0) 
+    {
+      tmp.67547232 (N3_int)
+      tmp.67547296 (N5_error)
+      tmp.67675984 (S4_res0N3_int4_res1N5_errore)
+      Fprintf(interfacevalue(methods: &(__go_pimt__(I5_WriteFpAN5_uint8eerN3_intN5_erroreee)__(N7_os.File)) , object: Stderr),"error: %s\n",[](AIee){.main.msg}) 
+    }
+  }
+  tmp.67547616 (N3_int)
+  tmp.67547872 (N5_error)
+  tmp.67676304 = nil
+  tmp.67679344 (S4_res0N3_int4_res1N5_errore)
+  Fprintf(interfacevalue(methods: &(__go_pimt__(I5_WriteFpAN5_uint8eerN3_intN5_erroreee)__(N7_os.File)) , object: Stderr),"usage: demangler [flags]\n",slicevalue(values: nil, length: 0, capacity: 0)) 
+  PrintDefaults() 
+  Exit(2) 
+}
+.main.filter(.main.inf (pN7_os.File),.main.outf (pN7_os.File)) (.main.$ret0 (N5_error)) : (FppN7_os.FilepN7_os.FileerN5_erroree)
+{
+  var .main.scanner (pN13_bufio.Scanner) = NewScanner(interfacevalue(methods: &(__go_pimt__(I4_ReadFpAN5_uint8eerN3_intN5_erroreee)__(N7_os.File)) , object: .main.inf)) 
+  {
+    {
+      goto label.67546496
+      label.67544672:
+      {
+        tmp.67553920 (N3_int)
+        tmp.67553984 (N5_error)
+        tmp.67560672 = Text(.main.scanner) 
+        tmp.67564048 = DemangleLine(tmp.67560672) 
+        tmp.67679856 (S4_res0N3_int4_res1N5_errore)
+        Fprintf(interfacevalue(methods: &(__go_pimt__(I5_WriteFpAN5_uint8eerN3_intN5_erroreee)__(N7_os.File)) , object: .main.outf),"%s\n",[](AIee){tmp.67564048}) 
+        Fprintf(interfacevalue(methods: &(__go_pimt__(I5_WriteFpAN5_uint8eerN3_intN5_erroreee)__(N7_os.File)) , object: .main.outf),"%s\n",[](AIee){tmp.67564048}) 
+      }
+      label.67546496:
+      if Scan(.main.scanner) 
+      {
+        goto label.67544672
+      }
+    }
+  }
+  {
+    .main.$ret0 = nil
+    return 
+  }
+}
+.main.main() : (Fe)
+{
+  SetFlags(0) 
+  SetPrefix("demangler: ") 
+  Parse() 
+  tmp.67555296 (N3_int)
+  tmp.67555456 (N5_error)
+  tmp.67680416 = *(.main.verbflag) 
+  tmp.67680768 (S4_res0N3_int4_res1N5_errore)
+  Printf("setting demangler.Verbctl to %d\n",[](AIee){tmp.67680416}) 
+  Verbctl = *(.main.verbflag) 
+  tmp.67681072 = nil
+  .main.verb(1,"in main",slicevalue(values: nil, length: 0, capacity: 0)) 
+  {
+    if (NArg()  != 0) 
+    {
+      .main.usage("unknown extra args") 
+    }
+  }
+  var .main.err (N5_error) 
+  var .main.infile (pN7_os.File) = Stdin
+  {
+    if (len(*(.main.infileflag) )  > 0) 
+    {
+      tmp.67681360 = *(.main.infileflag) 
+      .main.verb(1,"opening %s",[](AIee){tmp.67681360}) 
+      tmp.67556448 (pN7_os.File)
+      tmp.67556512 (N5_error)
+      {
+        tmp.67681472 (S4_res0pN7_os.File4_res1N5_errore)
+        Open(*(.main.infileflag) ) 
+        tmp.67564176 = 0@(Open(*(.main.infileflag) ) )
+        tmp.67556928 (pN7_os.File) = tmp.67564176
+        Open(*(.main.infileflag) ) 
+        tmp.67563920 = 1@(Open(*(.main.infileflag) ) )
+        tmp.67556992 (N5_error) = tmp.67563920
+        .main.infile = tmp.67556928
+        .main.err = tmp.67556992
+      }
+      {
+        if (.main.err != nil) 
+        {
+          tmp.67682096 = "%v"
+          Fatal([](AIee){tmp.67682096,.main.err}) 
+        }
+      }
+    }
+  }
+  var .main.outfile (pN7_os.File) = Stdout
+  {
+    if (len(*(.main.outfileflag) )  > 0) 
+    {
+      tmp.67682256 = *(.main.outfileflag) 
+      .main.verb(1,"opening %s",[](AIee){tmp.67682256}) 
+      tmp.67558144 (pN7_os.File)
+      tmp.67558208 (N5_error)
+      {
+        tmp.67682368 (S4_res0pN7_os.File4_res1N5_errore)
+        OpenFile(*(.main.outfileflag) ,65,438) 
+        tmp.67563984 = 0@(OpenFile(*(.main.outfileflag) ,65,438) )
+        tmp.67558512 (pN7_os.File) = tmp.67563984
+        OpenFile(*(.main.outfileflag) ,65,438) 
+        tmp.67564480 = 1@(OpenFile(*(.main.outfileflag) ,65,438) )
+        tmp.67558576 (N5_error) = tmp.67564480
+        .main.outfile = tmp.67558512
+        .main.err = tmp.67558576
+      }
+      {
+        if (.main.err != nil) 
+        {
+          tmp.67682736 = "%v"
+          Fatal([](AIee){tmp.67682736,.main.err}) 
+        }
+      }
+    }
+  }
+  tmp.67564112 = .main.filter(.main.infile,.main.outfile) 
+  .main.err = tmp.67564112
+  {
+    if (.main.err != nil) 
+    {
+      tmp.67682848 = "%v"
+      Fatal([](AIee){tmp.67682848,.main.err}) 
+    }
+  }
+  tmp.67682960 = nil
+  .main.verb(1,"leaving main",slicevalue(values: nil, length: 0, capacity: 0)) 
+}
+.main.AIe1e$hash(key (pv),key_size (N7_uintptr)) (.main.$ret1 (N7_uintptr)) : (FppvN7_uintptrerN7_uintptree)
+{
+  {
+    tmp.67590208 (N7_uintptr) = 0
+    tmp.67590304 (N7_uintptr) = (N7_uintptr)(key) 
+    tmp.67590448 (N3_int)
+    {
+      tmp.67593696 = (pAIe1e)(key) 
+      tmp.67593792 (N3_int)
+      {
+        {
+          tmp.67594432 = tmp.67593696
+          tmp.67594672 (N3_int) = 1
+          tmp.67593792 = 0
+        }
+        goto label.67596880
+        label.67593856:
+        {
+          tmp.67590448 = tmp.67593792
+          {
+            tmp.67590208 = (tmp.67590208 * 33) 
+            tmp.67590208 = (tmp.67590208 + __go_type_hash_empty_interface((pv)(tmp.67590304) ,typeinfo((Ie),size )) ) 
+          }
+        }
+        {
+          tmp.67593792 = (tmp.67593792 + 1) 
+        }
+        label.67596880:
+        if (tmp.67593792 < tmp.67594672) 
+        {
+          goto label.67593856
+        }
+      }
+    }
+    {
+      .main.$ret1 = tmp.67590208
+      return 
+    }
+  }
+}
+.main.AIe1e$equal(key1 (pv),key2 (pv),key_size (N7_uintptr)) (.main.$ret2 (N4_bool)) : (FppvpvN7_uintptrerN4_boolee)
+{
+  {
+    tmp.67599344 (pAIe1e) = (pAIe1e)(key1) 
+    tmp.67599488 (pAIe1e) = (pAIe1e)(key2) 
+    tmp.67599632 (N3_int)
+    {
+      tmp.67602512 = tmp.67599344
+      tmp.67602576 (N3_int)
+      {
+        {
+          tmp.67603184 = tmp.67602512
+          tmp.67603392 (N3_int) = 1
+          tmp.67602576 = 0
+        }
+        goto label.67605584
+        label.67599552:
+        {
+          tmp.67599632 = tmp.67602576
+          {
+            if (*(tmp.67599344) [tmp.67599632] != *(tmp.67599488) [tmp.67599632]) 
+            {
+              {
+                .main.$ret2 = false
+                return 
+              }
+            }
+          }
+        }
+        {
+          tmp.67602576 = (tmp.67602576 + 1) 
+        }
+        label.67605584:
+        if (tmp.67602576 < tmp.67603392) 
+        {
+          goto label.67599552
+        }
+      }
+    }
+    {
+      .main.$ret2 = true
+      return 
+    }
+  }
+}
+.main.AIe2e$hash(key (pv),key_size (N7_uintptr)) (.main.$ret3 (N7_uintptr)) : (FppvN7_uintptrerN7_uintptree)
+{
+  {
+    tmp.67615072 (N7_uintptr) = 0
+    tmp.67615168 (N7_uintptr) = (N7_uintptr)(key) 
+    tmp.67615312 (N3_int)
+    {
+      tmp.67618640 = (pAIe2e)(key) 
+      tmp.67618736 (N3_int)
+      {
+        {
+          tmp.67619376 = tmp.67618640
+          tmp.67619616 (N3_int) = 2
+          tmp.67618736 = 0
+        }
+        goto label.67621904
+        label.67618800:
+        {
+          tmp.67615312 = tmp.67618736
+          {
+            tmp.67615072 = (tmp.67615072 * 33) 
+            tmp.67615072 = (tmp.67615072 + __go_type_hash_empty_interface((pv)(tmp.67615168) ,typeinfo((Ie),size )) ) 
+          }
+        }
+        {
+          tmp.67618736 = (tmp.67618736 + 1) 
+        }
+        label.67621904:
+        if (tmp.67618736 < tmp.67619616) 
+        {
+          goto label.67618800
+        }
+      }
+    }
+    {
+      .main.$ret3 = tmp.67615072
+      return 
+    }
+  }
+}
+.main.AIe2e$equal(key1 (pv),key2 (pv),key_size (N7_uintptr)) (.main.$ret4 (N4_bool)) : (FppvpvN7_uintptrerN4_boolee)
+{
+  {
+    tmp.67624608 (pAIe2e) = (pAIe2e)(key1) 
+    tmp.67624720 (pAIe2e) = (pAIe2e)(key2) 
+    tmp.67624864 (N3_int)
+    {
+      tmp.67627744 = tmp.67624608
+      tmp.67627808 (N3_int)
+      {
+        {
+          tmp.67628416 = tmp.67627744
+          tmp.67628624 (N3_int) = 2
+          tmp.67627808 = 0
+        }
+        goto label.67630816
+        label.67624784:
+        {
+          tmp.67624864 = tmp.67627808
+          {
+            if (*(tmp.67624608) [tmp.67624864] != *(tmp.67624720) [tmp.67624864]) 
+            {
+              {
+                .main.$ret4 = false
+                return 
+              }
+            }
+          }
+        }
+        {
+          tmp.67627808 = (tmp.67627808 + 1) 
+        }
+        label.67630816:
+        if (tmp.67627808 < tmp.67628624) 
+        {
+          goto label.67624784
+        }
+      }
+    }
+    {
+      .main.$ret4 = true
+      return 
+    }
+  }
+}
