@@ -1,6 +1,6 @@
 # gccgo-demangler
 
-Demangler for gccgo AST dumps. Walks through an input file and tries to apply demangling to anything that looks like a mangled type. 
+Demangler for gccgo AST dumps. Walks through an input file and tries to apply demangling to anything that looks like a mangled type. Any identifier or symbol that doesn't demangle properly will just be left alone.
 
 Example usage:
 
@@ -11,7 +11,7 @@ Example usage:
   % go get github.com/thanm/gccgo-demangler/gccgo-dem
   
   Run a symbol through the demangler:
-  % echo I5\_WriteFpAN5\_uint8eerN3\_intN5_erroreee | gccgo-dem
+  % echo I5_WriteFpAN5_uint8eerN3_intN5_erroreee | gccgo-dem
   interface{Write func{([]uint8) (int, error)}}
 
   Create AST dump via gccgo compile:
