@@ -10,10 +10,10 @@ import (
 	"regexp"
 )
 
-var verbctl int = 0
+var Verbctl int = 0
 
 func verb(vlevel int, s string, a ...interface{}) {
-	if verbctl >= vlevel {
+	if Verbctl >= vlevel {
 		fmt.Printf(s, a...)
 		fmt.Printf("\n")
 	}
@@ -323,9 +323,10 @@ func Demangle(token string) string {
 }
 
 // Regular expression for a go identifier
-var idsre *regexp.Regexp = regexp.MustCompile(`[\pL_][\pL\pN_]*`)
+var idsre *regexp.Regexp = regexp.MustCompile(`[\pL_\.][\pL\pN_\.]*`)
 
 func DemangleLine(line string) string {
+	verb(1, "== DemangleLine(%s)", line)
 	bytes := []byte(line)
 	m := idsre.FindAllSubmatchIndex(bytes, -1)
 	if len(m) == 0 {

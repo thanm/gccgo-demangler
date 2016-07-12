@@ -47,6 +47,8 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("demangler: ")
 	flag.Parse()
+	fmt.Printf("setting demangler.Verbctl to %d\n", *verbflag)
+	demangler.Verbctl = *verbflag
 	verb(1, "in main")
 	if flag.NArg() != 0 {
 		usage("unknown extra args")
