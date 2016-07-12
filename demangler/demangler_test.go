@@ -97,10 +97,12 @@ func TestFunction(t *testing.T) {
 	var raw = []string{
 		"Fe",
 		"FppN5_int32pN5_int64erN4_boolIeee",
+		"FpN3_intN6_stringAIeeVee",
 	}
 	var cooked = []string{
 		"func{()}",
 		"func{(*int32, *int64) (bool, interface{})}",
+		"func{(int, string, []interface{}...)}",
 	}
 	for pos, r := range raw {
 		res := testDem(r, cooked[pos])

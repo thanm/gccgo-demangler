@@ -282,6 +282,9 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 		}
 		res = append(res, pt...)
 	}
+	if len(varargs) > 1 {
+		res = append(res, []byte(varargs)...)
+	}
 	res = append(res, []byte(")")...)
 	if len(resultTypes) > 0 {
 		res = append(res, []byte(" ")...)
@@ -293,9 +296,6 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 				res = append(res, []byte(", ")...)
 			}
 			res = append(res, rt...)
-		}
-		if len(varargs) > 1 {
-			res = append(res, []byte(varargs)...)
 		}
 		if len(resultTypes) > 1 {
 			res = append(res, []byte(")")...)
@@ -423,7 +423,6 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 			return []byte{}, 0, derr
 		}
 		return dres, dcons + 1, nil
-
 	case 'p':
 		// p => pointer (p points-to)
 		pt, pcon, perr := dem(id[1:])
