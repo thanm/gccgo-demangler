@@ -142,6 +142,10 @@ func dem_struct(id []byte) (res []byte, consumed int, err error) {
 	fieldtypes := make([][]byte, 0, 16)
 	fieldtags := make([][]byte, 0, 16)
 
+	if idx-1 > len(id) {
+		return []byte{}, 0, errors.New("dem_struct premature EOS")
+	}
+
 	for id[idx] != 'e' {
 
 		// field name
@@ -152,6 +156,10 @@ func dem_struct(id []byte) (res []byte, consumed int, err error) {
 		fieldnames = append(fieldnames, fname)
 		idx += fncons
 
+		if idx-1 > len(id) {
+			return []byte{}, 0, errors.New("dem_struct premature EOS")
+		}
+
 		// field type
 		ftype, ftcons, fterr := dem(id[idx:])
 		if fterr != nil || ftcons == 0 {
@@ -160,8 +168,15 @@ func dem_struct(id []byte) (res []byte, consumed int, err error) {
 		fieldtypes = append(fieldtypes, ftype)
 		idx += ftcons
 
+		if idx-1 > len(id) {
+			return []byte{}, 0, errors.New("dem_struct premature EOS")
+		}
+
 		if id[idx] == 'T' {
 			idx += 1
+			if idx-1 > len(id) {
+				return []byte{}, 0, errors.New("dem_struct premature EOS")
+			}
 			ftag, ftgcons, ftgerr := dem_name(id[idx:])
 			if ftgerr != nil || ftgcons == 0 {
 				return []byte{}, 0, ftgerr
@@ -291,6 +306,39 @@ func dem_function(id []byte) (res []byte, consumed int, err error) {
 	return res, idx + 1, nil
 }
 
+// M => map (M keytype __ valtype)
+func dem_map(id []byte) (res []byte, consumed int, err error) {
+	idx := 1
+
+	if idx-1 > len(id) {
+		return []byte{}, 0, errors.New("dem_map premature EOS")
+	}
+
+	// key type
+	kt, kcon, kerr := dem(id[idx:])
+	if kerr != nil {
+		return []byte{}, 0, kerr
+	}
+	idx += kcon
+
+	if idx-4 > len(id) {
+		return []byte{}, 0, errors.New("dem_map premature EOS")
+	}
+	if id[idx] != '_' || id[idx+1] != '_' {
+		return []byte{}, 0, errors.New("dem_map missing __")
+	}
+	idx += 2
+
+	// value type
+	vt, vcon, verr := dem(id[idx:])
+	if verr != nil {
+		return []byte{}, 0, verr
+	}
+	idx += vcon
+
+	return []byte(fmt.Sprintf("map[%s]%s", string(kt), string(vt))), idx, nil
+}
+
 // C => channel (C element [s][r]e)
 func dem_chan(id []byte) (res []byte, consumed int, err error) {
 	idx := 1
@@ -387,6 +435,9 @@ func dem(id []byte) (res []byte, consumed int, err error) {
 	case 'C':
 		// C => channel (C element [s][r]e)
 		return dem_chan(id)
+	case 'M':
+		// M => map (M keytype __ valtype)
+		return dem_map(id)
 	case 'I':
 		// I => interface (I (method-name method-type) e)
 		return dem_interface(id)
@@ -414,7 +465,7 @@ func Demangle(token string) string {
 }
 
 // Regular expression for a go identifier
-var idsre *regexp.Regexp = regexp.MustCompile(`[\pL_\.][\pL\pN_\.]*`)
+var idsre *regexp.Regexp = regexp.MustCompile(`[\pL_\.\$][\pL\pN_\.\$]*`)
 
 func DemangleLine(line string) string {
 	verb(1, "== DemangleLine(%s)", line)

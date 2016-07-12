@@ -164,3 +164,20 @@ func TestChan(t *testing.T) {
 		}
 	}
 }
+
+func TestMap(t *testing.T) {
+	var raw = []string{
+		"Mz__z",
+		"MN12_reflect.Type__pN9_tmp.decOp",
+	}
+	var cooked = []string{
+		"map[string]string",
+		"map[reflect.Type]*tmp.decOp",
+	}
+	for pos, r := range raw {
+		res := testDem(r, cooked[pos])
+		if res != "" {
+			t.Errorf(res)
+		}
+	}
+}
