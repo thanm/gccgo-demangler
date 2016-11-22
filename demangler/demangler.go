@@ -135,18 +135,24 @@ func dem_interface(id []byte) (res []byte, consumed int, err error) {
 	return res, idx + 1, nil
 }
 
-// S => struct (S (field-name field-type [T dd_ tag]) e)
+// S => struct (S (field-name field-type [T dd_ tag]) [x] e)
 func dem_struct(id []byte) (res []byte, consumed int, err error) {
 	idx := 1
 	fieldnames := make([][]byte, 0, 16)
 	fieldtypes := make([][]byte, 0, 16)
 	fieldtags := make([][]byte, 0, 16)
 
-	if idx-1 > len(id) {
+	if len(id) < 2 {
 		return []byte{}, 0, errors.New("dem_struct premature EOS")
 	}
 
 	for id[idx] != 'e' {
+
+		if idx+1 < len(id) && string(id[idx:idx+2]) == "xe" {
+			verb(2, " incomparable struct")
+			idx += 1
+			break
+		}
 
 		// field name
 		fname, fncons, fnerr := dem_name(id[idx:])
@@ -171,6 +177,8 @@ func dem_struct(id []byte) (res []byte, consumed int, err error) {
 		if idx-1 > len(id) {
 			return []byte{}, 0, errors.New("dem_struct premature EOS")
 		}
+
+		verb(2, " field '%s' type '%s'", fname, ftype)
 
 		if id[idx] == 'T' {
 			idx += 1
